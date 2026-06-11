@@ -1,19 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { Beaker, Loader2 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { COMMODITIES, allQuotes, fmt } from "@/lib/market-data";
+import { useCommodities, fmt, inr } from "@/lib/commodities";
 
 export const Route = createFileRoute("/calculator")({
   head: () => ({
@@ -21,75 +13,96 @@ export const Route = createFileRoute("/calculator")({
       { title: "Margin Calculator — ChemPulse" },
       {
         name: "description",
-        content: "Build a recipe of raw materials and see live margin health.",
+        content:
+          "Reactive Blue Dye margin calculator with live raw material prices and what-if price-spike sliders.",
       },
     ],
   }),
   component: CalculatorPage,
 });
 
-interface Ingredient {
-  id: string;
-  symbol: string;
-  qty: number; // MT per output unit
-}
-
-const DEFAULT_INGREDIENTS: Ingredient[] = [
-  { id: "1", symbol: "ETH", qty: 0.55 },
-  { id: "2", symbol: "BNZ", qty: 0.42 },
-];
+// Layer 3 — Reactive Blue Dye recipe (kg of raw material per kg of finished dye)
+const RECIPE = [
+  { symbol: "HACID", label: "H-Acid", qty: 0.35 },
+  { symbol: "ANILINE", label: "Aniline", qty: 0.18 },
+  { symbol: "CAUSTIC", label: "Caustic Soda (Flakes)", qty: 0.22 },
+] as const;
 
 function CalculatorPage() {
-  const quotes = useMemo(() => allQuotes(), []);
-  const priceOf = (s: string) => quotes.find((q) => q.symbol === s)?.price ?? 0;
+  const { data: quotes = [], isLoading, error } = useCommodities();
 
-  const [productName, setProductName] = useState("Custom Product A");
-  const [sellPrice, setSellPrice] = useState(1450);
-  const [overhead, setOverhead] = useState(80);
-  const [yieldPct, setYieldPct] = useState(94);
-  const [ingredients, setIngredients] = useState<Ingredient[]>(DEFAULT_INGREDIENTS);
+  const [sellPrice, setSellPrice] = useState(380); // ₹/kg finished
+  const [targetMargin, setTargetMargin] = useState(25); // %
+  // What-if % adjustment per raw material (-50% .. +100%)
+  const [shocks, setShocks] = useState<Record<string, number>>({
+    HACID: 0,
+    ANILINE: 0,
+    CAUSTIC: 0,
+  });
 
-  const rawCost = ingredients.reduce((sum, ing) => sum + priceOf(ing.symbol) * ing.qty, 0);
-  const effectiveCost = (rawCost + overhead) / (yieldPct / 100);
-  const margin = sellPrice - effectiveCost;
+  const lines = useMemo(
+    () =>
+      RECIPE.map((r) => {
+        const q = quotes.find((x) => x.symbol === r.symbol);
+        const basePrice = q?.price ?? 0;
+        const shockPct = shocks[r.symbol] ?? 0;
+        const shockedPrice = basePrice * (1 + shockPct / 100);
+        const cost = shockedPrice * r.qty;
+        return { ...r, basePrice, shockPct, shockedPrice, cost, found: !!q };
+      }),
+    [quotes, shocks],
+  );
+
+  const rawCost = lines.reduce((s, l) => s + l.cost, 0);
+  const margin = sellPrice - rawCost;
   const marginPct = sellPrice > 0 ? (margin / sellPrice) * 100 : 0;
+  const targetCost = sellPrice * (1 - targetMargin / 100);
+  const headroom = targetCost - rawCost; // positive = healthy
 
-  const addIngredient = () => {
-    const used = new Set(ingredients.map((i) => i.symbol));
-    const next = COMMODITIES.find((c) => !used.has(c.symbol));
-    if (!next) return;
-    setIngredients([
-      ...ingredients,
-      { id: crypto.randomUUID(), symbol: next.symbol, qty: 0.1 },
-    ]);
-  };
+  // Health gauge: marginPct vs targetMargin
+  const health =
+    marginPct >= targetMargin
+      ? "Healthy"
+      : marginPct >= targetMargin * 0.6
+        ? "At Risk"
+        : marginPct >= 0
+          ? "Critical"
+          : "Loss";
+  const healthTone =
+    health === "Healthy"
+      ? "text-up"
+      : health === "At Risk"
+        ? "text-primary"
+        : "text-down";
+  const gaugePct = Math.max(0, Math.min(100, (marginPct / Math.max(targetMargin, 1)) * 100));
 
   return (
     <AppShell>
       <div className="mb-6">
         <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
-          Margin Calculator
+          Layer 3 · Margin Calculator
         </p>
-        <h1 className="mt-1 text-2xl font-semibold sm:text-3xl">Recipe Builder</h1>
+        <h1 className="mt-1 flex items-center gap-2 text-2xl font-semibold sm:text-3xl">
+          <Beaker className="h-6 w-6 text-primary" /> Reactive Blue Dye
+        </h1>
+        <p className="mt-1 font-mono text-[11px] text-muted-foreground">
+          Live raw material prices from commodities table · what-if sliders simulate price spikes
+        </p>
       </div>
 
+      {error && (
+        <div className="mb-4 rounded-md border border-down/40 bg-down/10 p-3 font-mono text-xs text-down">
+          Failed to load prices: {(error as Error).message}
+        </div>
+      )}
+
       <div className="grid gap-4 lg:grid-cols-3">
-        {/* Recipe */}
+        {/* Recipe + sliders */}
         <section className="rounded-md border border-border bg-card p-4 lg:col-span-2">
           <div className="mb-4 grid gap-3 sm:grid-cols-2">
             <div>
               <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-                Product Name
-              </Label>
-              <Input
-                value={productName}
-                onChange={(e) => setProductName(e.target.value)}
-                className="mt-1"
-              />
-            </div>
-            <div>
-              <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-                Sell Price (USD/MT)
+                Finished Price (₹/kg)
               </Label>
               <Input
                 type="number"
@@ -98,138 +111,161 @@ function CalculatorPage() {
                 className="mt-1 font-mono tabular"
               />
             </div>
+            <div>
+              <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                Target Margin (%)
+              </Label>
+              <Input
+                type="number"
+                value={targetMargin}
+                onChange={(e) => setTargetMargin(Number(e.target.value) || 0)}
+                className="mt-1 font-mono tabular"
+              />
+            </div>
           </div>
 
           <h2 className="mb-2 font-mono text-xs uppercase tracking-widest text-muted-foreground">
-            Raw Materials
+            Recipe · Raw Materials (kg per kg of finished dye)
           </h2>
-          <div className="space-y-2">
-            {ingredients.map((ing) => {
-              const q = quotes.find((x) => x.symbol === ing.symbol);
-              const cost = (q?.price ?? 0) * ing.qty;
-              return (
-                <div
-                  key={ing.id}
-                  className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-2 rounded-md border border-border bg-background p-2"
-                >
-                  <Select
-                    value={ing.symbol}
-                    onValueChange={(v) =>
-                      setIngredients((arr) =>
-                        arr.map((i) => (i.id === ing.id ? { ...i, symbol: v } : i)),
-                      )
-                    }
-                  >
-                    <SelectTrigger className="h-9">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {COMMODITIES.map((c) => (
-                        <SelectItem key={c.symbol} value={c.symbol}>
-                          <span className="font-mono">{c.symbol}</span> — {c.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={ing.qty}
-                    onChange={(e) =>
-                      setIngredients((arr) =>
-                        arr.map((i) =>
-                          i.id === ing.id ? { ...i, qty: Number(e.target.value) || 0 } : i,
-                        ),
-                      )
-                    }
-                    className="w-24 font-mono tabular"
-                  />
-                  <div className="w-28 text-right font-mono text-sm tabular">
-                    ${fmt(cost)}
+
+          {isLoading ? (
+            <div className="flex items-center justify-center gap-2 p-10 font-mono text-xs text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" /> Loading live prices…
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {lines.map((l) => (
+                <div key={l.symbol} className="rounded-md border border-border bg-background p-3">
+                  <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
+                    <div>
+                      <div className="font-mono text-sm font-semibold">
+                        {l.label}{" "}
+                        <span className="text-muted-foreground">({l.symbol})</span>
+                      </div>
+                      <div className="font-mono text-[11px] text-muted-foreground">
+                        {fmt(l.qty, 2)} kg/kg · live {inr(l.basePrice)}/kg
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-mono text-sm tabular">
+                        {inr(l.shockedPrice)}{" "}
+                        <span className="text-muted-foreground">/kg</span>
+                      </div>
+                      <div className="font-mono text-[11px] tabular text-primary">
+                        cost {inr(l.cost)}
+                      </div>
+                    </div>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() =>
-                      setIngredients((arr) => arr.filter((i) => i.id !== ing.id))
+                  <div className="mb-1 flex items-center justify-between">
+                    <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                      What-if price shock
+                    </Label>
+                    <span
+                      className={`font-mono text-xs tabular ${
+                        l.shockPct > 0
+                          ? "text-down"
+                          : l.shockPct < 0
+                            ? "text-up"
+                            : "text-muted-foreground"
+                      }`}
+                    >
+                      {l.shockPct > 0 ? "+" : ""}
+                      {l.shockPct}%
+                    </span>
+                  </div>
+                  <Slider
+                    value={[l.shockPct]}
+                    min={-50}
+                    max={100}
+                    step={1}
+                    onValueChange={(v) =>
+                      setShocks((s) => ({ ...s, [l.symbol]: v[0] }))
                     }
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  />
+                  <div className="mt-1 flex justify-between font-mono text-[10px] text-muted-foreground">
+                    <span>-50%</span>
+                    <span>baseline</span>
+                    <span>+100%</span>
+                  </div>
+                </div>
+              ))}
+
+              {lines.some((l) => !l.found) && (
+                <p className="font-mono text-[11px] text-down">
+                  Some recipe symbols are missing from the commodities table.
+                </p>
+              )}
+
+              <button
+                onClick={() => setShocks({ HACID: 0, ANILINE: 0, CAUSTIC: 0 })}
+                className="font-mono text-[11px] text-muted-foreground underline hover:text-foreground"
+              >
+                Reset all shocks
+              </button>
+            </div>
+          )}
+        </section>
+
+        {/* Health gauge */}
+        <section className="space-y-4">
+          <div className="rounded-md border border-border bg-card p-4">
+            <h2 className="mb-3 font-mono text-xs uppercase tracking-widest text-muted-foreground">
+              Margin Health
+            </h2>
+            <div className="mb-2 flex items-baseline justify-between">
+              <span className={`font-mono text-3xl font-semibold tabular ${healthTone}`}>
+                {fmt(marginPct, 1)}%
+              </span>
+              <span className={`font-mono text-xs uppercase tracking-widest ${healthTone}`}>
+                {health}
+              </span>
+            </div>
+            <Gauge value={gaugePct} />
+            <div className="mt-2 flex justify-between font-mono text-[10px] text-muted-foreground">
+              <span>0%</span>
+              <span>target {targetMargin}%</span>
+            </div>
+            <div className="mt-4 space-y-1.5 border-t border-border pt-3 font-mono text-xs">
+              <Row label="Raw cost / kg" value={inr(rawCost)} />
+              <Row label="Sell price / kg" value={inr(sellPrice)} />
+              <Row
+                label="Margin / kg"
+                value={inr(margin)}
+                tone={margin >= 0 ? "up" : "down"}
+                bold
+              />
+              <Row
+                label={`Headroom vs ${targetMargin}% target`}
+                value={`${headroom >= 0 ? "+" : ""}${inr(headroom)}`}
+                tone={headroom >= 0 ? "up" : "down"}
+              />
+            </div>
+          </div>
+
+          <div className="rounded-md border border-border bg-card p-4">
+            <h2 className="mb-3 font-mono text-xs uppercase tracking-widest text-muted-foreground">
+              Cost Breakdown
+            </h2>
+            {lines.map((l) => {
+              const share = rawCost > 0 ? (l.cost / rawCost) * 100 : 0;
+              return (
+                <div key={l.symbol} className="mb-2.5">
+                  <div className="flex items-baseline justify-between font-mono text-xs">
+                    <span>{l.label}</span>
+                    <span className="tabular">
+                      {inr(l.cost)}{" "}
+                      <span className="text-muted-foreground">({fmt(share, 0)}%)</span>
+                    </span>
+                  </div>
+                  <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                    <div
+                      className="h-full bg-primary transition-all"
+                      style={{ width: `${share}%` }}
+                    />
+                  </div>
                 </div>
               );
             })}
-          </div>
-          <Button onClick={addIngredient} variant="outline" size="sm" className="mt-3">
-            <Plus className="h-4 w-4" /> Add Material
-          </Button>
-
-          <div className="mt-6 space-y-4 border-t border-border pt-4">
-            <SliderRow
-              label="Yield"
-              value={yieldPct}
-              onChange={setYieldPct}
-              min={50}
-              max={100}
-              step={1}
-              display={`${yieldPct}%`}
-            />
-            <SliderRow
-              label="Overhead per MT"
-              value={overhead}
-              onChange={setOverhead}
-              min={0}
-              max={400}
-              step={5}
-              display={`$${overhead}`}
-            />
-            <SliderRow
-              label="Sell Price"
-              value={sellPrice}
-              onChange={setSellPrice}
-              min={Math.round(effectiveCost * 0.5)}
-              max={Math.round(effectiveCost * 2.5)}
-              step={5}
-              display={`$${sellPrice}`}
-            />
-          </div>
-        </section>
-
-        {/* Health */}
-        <section className="space-y-4">
-          <MarginHealth marginPct={marginPct} />
-          <div className="rounded-md border border-border bg-card p-4">
-            <h2 className="mb-3 font-mono text-xs uppercase tracking-widest text-muted-foreground">
-              {productName}
-            </h2>
-            <CostRow label="Raw Materials" value={rawCost} />
-            <CostRow label="Overhead" value={overhead} />
-            <CostRow
-              label={`Yield Adj. (${yieldPct}%)`}
-              value={effectiveCost - rawCost - overhead}
-              dim
-            />
-            <div className="my-2 border-t border-border" />
-            <CostRow label="Total Cost" value={effectiveCost} bold />
-            <CostRow label="Sell Price" value={sellPrice} bold />
-            <div className="my-2 border-t border-border" />
-            <CostRow
-              label="Margin / MT"
-              value={margin}
-              bold
-              tone={margin >= 0 ? "up" : "down"}
-            />
-            <div className="mt-2 flex items-baseline justify-between">
-              <span className="text-sm text-muted-foreground">Margin %</span>
-              <span
-                className={`font-mono text-2xl tabular ${
-                  marginPct >= 0 ? "text-up" : "text-down"
-                }`}
-              >
-                {marginPct >= 0 ? "+" : ""}
-                {fmt(marginPct)}%
-              </span>
-            </div>
           </div>
         </section>
       </div>
@@ -237,128 +273,36 @@ function CalculatorPage() {
   );
 }
 
-function SliderRow({
-  label,
-  value,
-  onChange,
-  min,
-  max,
-  step,
-  display,
-}: {
-  label: string;
-  value: number;
-  onChange: (n: number) => void;
-  min: number;
-  max: number;
-  step: number;
-  display: string;
-}) {
-  return (
-    <div>
-      <div className="mb-1 flex items-center justify-between">
-        <Label className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
-          {label}
-        </Label>
-        <span className="font-mono text-sm tabular text-primary">{display}</span>
-      </div>
-      <Slider
-        value={[value]}
-        min={min}
-        max={max}
-        step={step}
-        onValueChange={(v) => onChange(v[0])}
-      />
-    </div>
-  );
-}
-
-function CostRow({
+function Row({
   label,
   value,
   bold,
-  dim,
   tone,
 }: {
   label: string;
-  value: number;
+  value: string;
   bold?: boolean;
-  dim?: boolean;
   tone?: "up" | "down";
 }) {
   const color = tone === "up" ? "text-up" : tone === "down" ? "text-down" : "";
   return (
-    <div className="flex items-baseline justify-between py-1">
-      <span className={`text-sm ${dim ? "text-muted-foreground" : ""}`}>{label}</span>
-      <span
-        className={`font-mono tabular ${bold ? "text-base font-semibold" : "text-sm"} ${color}`}
-      >
-        ${fmt(value)}
-      </span>
+    <div className="flex items-baseline justify-between">
+      <span className="text-muted-foreground">{label}</span>
+      <span className={`tabular ${bold ? "font-semibold" : ""} ${color}`}>{value}</span>
     </div>
   );
 }
 
-function MarginHealth({ marginPct }: { marginPct: number }) {
-  const clamped = Math.max(-25, Math.min(50, marginPct));
-  const normalized = ((clamped + 25) / 75) * 100; // map -25..50 -> 0..100
-  const status =
-    marginPct >= 25
-      ? { label: "Healthy", color: "var(--color-up)" }
-      : marginPct >= 10
-        ? { label: "Acceptable", color: "var(--color-primary)" }
-        : marginPct >= 0
-          ? { label: "Thin", color: "var(--color-primary)" }
-          : { label: "Loss", color: "var(--color-down)" };
-
-  const angle = (normalized / 100) * 180;
-  const r = 80;
-  const cx = 100;
-  const cy = 100;
-  const x = cx + r * Math.cos(Math.PI - (angle * Math.PI) / 180);
-  const y = cy - r * Math.sin(Math.PI - (angle * Math.PI) / 180);
-
+function Gauge({ value }: { value: number }) {
+  const v = Math.max(0, Math.min(100, value));
+  const tone = v >= 100 ? "bg-up" : v >= 60 ? "bg-primary" : v >= 1 ? "bg-down/70" : "bg-down";
   return (
-    <div className="rounded-md border border-border bg-card p-4">
-      <h2 className="mb-2 font-mono text-xs uppercase tracking-widest text-muted-foreground">
-        Margin Health
-      </h2>
-      <svg viewBox="0 0 200 120" className="w-full">
-        <path
-          d={`M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`}
-          stroke="var(--color-muted)"
-          strokeWidth="12"
-          fill="none"
-          strokeLinecap="round"
-        />
-        <path
-          d={`M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${x} ${y}`}
-          stroke={status.color}
-          strokeWidth="12"
-          fill="none"
-          strokeLinecap="round"
-        />
-        <text
-          x={cx}
-          y={cy - 18}
-          textAnchor="middle"
-          className="font-mono"
-          fontSize="22"
-          fill={status.color}
-          style={{ fontVariantNumeric: "tabular-nums" }}
-        >
-          {fmt(marginPct)}%
-        </text>
-        <text
-          x={cx}
-          y={cy + 2}
-          textAnchor="middle"
-          fontSize="11"
-          fill="var(--color-muted-foreground)"
-        >
-          {status.label}
-        </text>
-      </svg>
+    <div className="relative h-3 w-full overflow-hidden rounded-full bg-muted">
+      <div
+        className={`h-full transition-all ${tone}`}
+        style={{ width: `${Math.min(v, 100)}%` }}
+      />
+      <div className="absolute inset-y-0 left-[100%] w-px bg-foreground/60" />
     </div>
   );
 }
