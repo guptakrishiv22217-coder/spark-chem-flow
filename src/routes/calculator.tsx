@@ -1,10 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Beaker, Loader2 } from "lucide-react";
+import { Beaker, Loader2, AlertTriangle } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { useCommodities, fmt, inr } from "@/lib/commodities";
 
 export const Route = createFileRoute("/calculator")({
@@ -31,6 +32,7 @@ const RECIPE = [
 function CalculatorPage() {
   const { data: quotes = [], isLoading, error } = useCommodities();
 
+  const [productName, setProductName] = useState("Reactive Blue Dye");
   const [sellPrice, setSellPrice] = useState(380); // ₹/kg finished
   const [targetMargin, setTargetMargin] = useState(25); // %
   // What-if % adjustment per raw material (-50% .. +100%)
@@ -82,9 +84,14 @@ function CalculatorPage() {
         <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
           Layer 3 · Margin Calculator
         </p>
-        <h1 className="mt-1 flex items-center gap-2 text-2xl font-semibold sm:text-3xl">
-          <Beaker className="h-6 w-6 text-primary" /> Reactive Blue Dye
-        </h1>
+        <div className="mt-1 flex items-center gap-2">
+          <Beaker className="h-6 w-6 shrink-0 text-primary" />
+          <input
+            value={productName}
+            onChange={(e) => setProductName(e.target.value)}
+            className="w-full max-w-xl border-b-2 border-transparent bg-transparent pb-1 font-sans text-2xl font-bold text-foreground outline-none transition-colors hover:border-border focus:border-primary sm:text-3xl"
+          />
+        </div>
         <p className="mt-1 font-mono text-[11px] text-muted-foreground">
           Live raw material prices from commodities table · what-if sliders simulate price spikes
         </p>
@@ -99,6 +106,13 @@ function CalculatorPage() {
       <div className="grid gap-4 lg:grid-cols-3">
         {/* Recipe + sliders */}
         <section className="rounded-md border border-border bg-card p-4 lg:col-span-2">
+          <div className="mb-4 flex items-center gap-3">
+            <div className="h-px flex-1 bg-border" />
+            <span className="font-sans text-[10px] uppercase tracking-widest text-muted-foreground">
+              Margin Levers
+            </span>
+            <div className="h-px flex-1 bg-border" />
+          </div>
           <div className="mb-4 grid gap-3 sm:grid-cols-2">
             <div>
               <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
@@ -110,6 +124,11 @@ function CalculatorPage() {
                 onChange={(e) => setSellPrice(Number(e.target.value) || 0)}
                 className="mt-1 font-mono tabular"
               />
+              <div className="mt-1.5 flex flex-wrap justify-between gap-x-2 font-mono text-[10px] text-muted-foreground">
+                <span>Break-even: ₹{rawCost.toFixed(2)}</span>
+                <span className="text-primary">15%: ₹{(rawCost / 0.85).toFixed(2)}</span>
+                <span className="text-up">25%: ₹{(rawCost / 0.75).toFixed(2)}</span>
+              </div>
             </div>
             <div>
               <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
@@ -269,6 +288,44 @@ function CalculatorPage() {
           </div>
         </section>
       </div>
+
+      <section className="mt-6">
+        <h2 className="mb-3 font-mono text-xs uppercase tracking-widest text-muted-foreground">
+          Recommended Actions
+        </h2>
+        {(() => {
+          const spiked = lines.filter((l) => l.shockPct > 30);
+          if (spiked.length === 0) {
+            return (
+              <div className="rounded-md border border-border bg-card p-4 font-mono text-xs text-muted-foreground">
+                Cost levels are stable. No immediate action required.
+              </div>
+            );
+          }
+          return (
+            <div className="space-y-3">
+              {spiked.map((l) => {
+                const suggestedPrice = rawCost / 0.75;
+                return (
+                  <Alert
+                    key={l.symbol}
+                    variant="default"
+                    className="border-yellow-500/30 bg-yellow-500/5"
+                  >
+                    <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                    <AlertTitle>Alert: {l.label} Price Spike Simulated</AlertTitle>
+                    <AlertDescription>
+                      At +{l.shockPct}% cost shock, your margin drops to{" "}
+                      {fmt(marginPct, 1)}%. Consider locking in forward contracts or
+                      raising finished price to at least ₹{suggestedPrice.toFixed(2)}/kg.
+                    </AlertDescription>
+                  </Alert>
+                );
+              })}
+            </div>
+          );
+        })()}
+      </section>
     </AppShell>
   );
 }
