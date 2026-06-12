@@ -106,6 +106,13 @@ function CalculatorPage() {
       <div className="grid gap-4 lg:grid-cols-3">
         {/* Recipe + sliders */}
         <section className="rounded-md border border-border bg-card p-4 lg:col-span-2">
+          <div className="mb-4 flex items-center gap-3">
+            <div className="h-px flex-1 bg-border" />
+            <span className="font-sans text-[10px] uppercase tracking-widest text-muted-foreground">
+              Margin Levers
+            </span>
+            <div className="h-px flex-1 bg-border" />
+          </div>
           <div className="mb-4 grid gap-3 sm:grid-cols-2">
             <div>
               <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
@@ -117,6 +124,11 @@ function CalculatorPage() {
                 onChange={(e) => setSellPrice(Number(e.target.value) || 0)}
                 className="mt-1 font-mono tabular"
               />
+              <div className="mt-1.5 flex flex-wrap justify-between gap-x-2 font-mono text-[10px] text-muted-foreground">
+                <span>Break-even: ₹{rawCost.toFixed(2)}</span>
+                <span className="text-primary">15%: ₹{(rawCost / 0.85).toFixed(2)}</span>
+                <span className="text-up">25%: ₹{(rawCost / 0.75).toFixed(2)}</span>
+              </div>
             </div>
             <div>
               <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
