@@ -84,9 +84,14 @@ function CalculatorPage() {
         <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
           Layer 3 · Margin Calculator
         </p>
-        <h1 className="mt-1 flex items-center gap-2 text-2xl font-semibold sm:text-3xl">
-          <Beaker className="h-6 w-6 text-primary" /> Reactive Blue Dye
-        </h1>
+        <div className="mt-1 flex items-center gap-2">
+          <Beaker className="h-6 w-6 shrink-0 text-primary" />
+          <input
+            value={productName}
+            onChange={(e) => setProductName(e.target.value)}
+            className="w-full max-w-xl border-b-2 border-transparent bg-transparent pb-1 font-sans text-2xl font-bold text-foreground outline-none transition-colors hover:border-border focus:border-primary sm:text-3xl"
+          />
+        </div>
         <p className="mt-1 font-mono text-[11px] text-muted-foreground">
           Live raw material prices from commodities table · what-if sliders simulate price spikes
         </p>
