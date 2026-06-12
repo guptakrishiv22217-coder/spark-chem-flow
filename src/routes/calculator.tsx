@@ -32,6 +32,7 @@ const RECIPE = [
 function CalculatorPage() {
   const { data: quotes = [], isLoading, error } = useCommodities();
 
+  const [productName, setProductName] = useState("Reactive Blue Dye");
   const [sellPrice, setSellPrice] = useState(380); // ₹/kg finished
   const [targetMargin, setTargetMargin] = useState(25); // %
   // What-if % adjustment per raw material (-50% .. +100%)
