@@ -288,6 +288,44 @@ function CalculatorPage() {
           </div>
         </section>
       </div>
+
+      <section className="mt-6">
+        <h2 className="mb-3 font-mono text-xs uppercase tracking-widest text-muted-foreground">
+          Recommended Actions
+        </h2>
+        {(() => {
+          const spiked = lines.filter((l) => l.shockPct > 30);
+          if (spiked.length === 0) {
+            return (
+              <div className="rounded-md border border-border bg-card p-4 font-mono text-xs text-muted-foreground">
+                Cost levels are stable. No immediate action required.
+              </div>
+            );
+          }
+          return (
+            <div className="space-y-3">
+              {spiked.map((l) => {
+                const suggestedPrice = rawCost / 0.75;
+                return (
+                  <Alert
+                    key={l.symbol}
+                    variant="default"
+                    className="border-yellow-500/30 bg-yellow-500/5"
+                  >
+                    <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                    <AlertTitle>Alert: {l.label} Price Spike Simulated</AlertTitle>
+                    <AlertDescription>
+                      At +{l.shockPct}% cost shock, your margin drops to{" "}
+                      {fmt(marginPct, 1)}%. Consider locking in forward contracts or
+                      raising finished price to at least ₹{suggestedPrice.toFixed(2)}/kg.
+                    </AlertDescription>
+                  </Alert>
+                );
+              })}
+            </div>
+          );
+        })()}
+      </section>
     </AppShell>
   );
 }
