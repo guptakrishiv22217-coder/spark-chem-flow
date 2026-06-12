@@ -1,10 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Beaker, Loader2 } from "lucide-react";
+import { Beaker, Loader2, AlertTriangle } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { useCommodities, fmt, inr } from "@/lib/commodities";
 
 export const Route = createFileRoute("/calculator")({
