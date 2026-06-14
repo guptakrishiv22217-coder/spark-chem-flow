@@ -415,6 +415,87 @@ function CalculatorPage() {
         </section>
       </div>
 
+      {showScenarios && (
+        <section className="mt-6 rounded-md border border-border bg-card p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="font-sans text-xs uppercase tracking-widest text-muted-foreground">
+              Saved Scenarios ({scenarios.length}/6)
+            </h2>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowScenarios(false)}
+                className="font-sans text-[10px] text-muted-foreground hover:text-foreground"
+              >
+                Hide
+              </button>
+              <button
+                onClick={() => {
+                  setScenarios([]);
+                  localStorage.removeItem(SCENARIOS_KEY);
+                }}
+                className="font-sans text-[10px] text-muted-foreground hover:text-destructive"
+              >
+                Clear all
+              </button>
+            </div>
+          </div>
+          {scenarios.length === 0 ? (
+            <p className="font-sans text-xs text-muted-foreground">
+              No scenarios saved yet.
+            </p>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {scenarios.map((sc) => {
+                const delta = sc.marginPct - marginPct;
+                return (
+                  <div
+                    key={sc.id}
+                    className="rounded-md border border-border bg-background p-3"
+                  >
+                    <div className="flex items-start justify-between">
+                      <span className="font-sans text-xs text-muted-foreground">
+                        {sc.name}
+                      </span>
+                      <button
+                        onClick={() => {
+                          const updated = scenarios.filter((s) => s.id !== sc.id);
+                          setScenarios(updated);
+                          localStorage.setItem(SCENARIOS_KEY, JSON.stringify(updated));
+                        }}
+                        className="font-mono text-sm leading-none text-muted-foreground hover:text-destructive"
+                      >
+                        ×
+                      </button>
+                    </div>
+                    <div className="mt-2 flex items-baseline justify-between">
+                      <span
+                        className={`font-mono text-xl tabular font-semibold ${sc.marginPct >= 0 ? "text-up" : "text-down"}`}
+                      >
+                        {sc.marginPct >= 0 ? "+" : ""}
+                        {sc.marginPct.toFixed(1)}%
+                      </span>
+                      <span
+                        className={`font-mono text-xs tabular ${delta >= 0 ? "text-up" : "text-down"}`}
+                      >
+                        vs now {delta >= 0 ? "+" : ""}
+                        {delta.toFixed(1)}%
+                      </span>
+                    </div>
+                    <div className="mt-1 font-sans text-[10px] text-muted-foreground">
+                      ₹{sc.finishedPrice}/kg · saved{" "}
+                      {new Date(sc.savedAt).toLocaleTimeString("en-IN", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      )}
+
       <section className="mt-6">
         <h2 className="mb-3 font-mono text-xs uppercase tracking-widest text-muted-foreground">
           Recommended Actions
