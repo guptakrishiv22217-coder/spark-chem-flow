@@ -32,6 +32,27 @@ const RECIPE = [
 const COST_DELTAS = [-0.20, -0.10, 0, +0.10, +0.20];
 const PRICE_DELTAS = [-0.10, -0.05, 0, +0.05, +0.10];
 
+interface Scenario {
+  id: string;
+  name: string;
+  savedAt: number;
+  marginPct: number;
+  finishedPrice: number;
+  snapshot: string;
+}
+
+const SCENARIOS_KEY = "chempulse:scenarios:v2";
+
+function loadScenarios(): Scenario[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(SCENARIOS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
 function SensitivityTable({
   baseCost,
   basePrice,
@@ -115,6 +136,8 @@ function CalculatorPage() {
     ANILINE: 0,
     CAUSTIC: 0,
   });
+  const [scenarios, setScenarios] = useState<Scenario[]>(() => loadScenarios());
+  const [showScenarios, setShowScenarios] = useState(false);
 
   const lines = useMemo(
     () =>
@@ -165,6 +188,35 @@ function CalculatorPage() {
             onChange={(e) => setProductName(e.target.value)}
             className="w-full max-w-xl border-b-2 border-transparent bg-transparent pb-1 font-sans text-2xl font-bold text-foreground outline-none transition-colors hover:border-border focus:border-primary sm:text-3xl"
           />
+          <button
+            onClick={() => {
+              const sc: Scenario = {
+                id: crypto.randomUUID(),
+                name: `${new Date().toLocaleString("en-IN", {
+                  day: "2-digit",
+                  month: "short",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}`,
+                savedAt: Date.now(),
+                marginPct,
+                finishedPrice: sellPrice,
+                snapshot: JSON.stringify({
+                  productName,
+                  sellPrice,
+                  targetMargin,
+                  shocks,
+                }),
+              };
+              const updated = [sc, ...scenarios].slice(0, 6);
+              setScenarios(updated);
+              localStorage.setItem(SCENARIOS_KEY, JSON.stringify(updated));
+              setShowScenarios(true);
+            }}
+            className="flex shrink-0 items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 font-sans text-xs text-muted-foreground transition-colors hover:border-primary hover:text-foreground"
+          >
+            Save Scenario
+          </button>
         </div>
         <p className="mt-1 font-mono text-[11px] text-muted-foreground">
           Live raw material prices from commodities table · what-if sliders simulate price spikes
@@ -362,6 +414,87 @@ function CalculatorPage() {
           </div>
         </section>
       </div>
+
+      {showScenarios && (
+        <section className="mt-6 rounded-md border border-border bg-card p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="font-sans text-xs uppercase tracking-widest text-muted-foreground">
+              Saved Scenarios ({scenarios.length}/6)
+            </h2>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowScenarios(false)}
+                className="font-sans text-[10px] text-muted-foreground hover:text-foreground"
+              >
+                Hide
+              </button>
+              <button
+                onClick={() => {
+                  setScenarios([]);
+                  localStorage.removeItem(SCENARIOS_KEY);
+                }}
+                className="font-sans text-[10px] text-muted-foreground hover:text-destructive"
+              >
+                Clear all
+              </button>
+            </div>
+          </div>
+          {scenarios.length === 0 ? (
+            <p className="font-sans text-xs text-muted-foreground">
+              No scenarios saved yet.
+            </p>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {scenarios.map((sc) => {
+                const delta = sc.marginPct - marginPct;
+                return (
+                  <div
+                    key={sc.id}
+                    className="rounded-md border border-border bg-background p-3"
+                  >
+                    <div className="flex items-start justify-between">
+                      <span className="font-sans text-xs text-muted-foreground">
+                        {sc.name}
+                      </span>
+                      <button
+                        onClick={() => {
+                          const updated = scenarios.filter((s) => s.id !== sc.id);
+                          setScenarios(updated);
+                          localStorage.setItem(SCENARIOS_KEY, JSON.stringify(updated));
+                        }}
+                        className="font-mono text-sm leading-none text-muted-foreground hover:text-destructive"
+                      >
+                        ×
+                      </button>
+                    </div>
+                    <div className="mt-2 flex items-baseline justify-between">
+                      <span
+                        className={`font-mono text-xl tabular font-semibold ${sc.marginPct >= 0 ? "text-up" : "text-down"}`}
+                      >
+                        {sc.marginPct >= 0 ? "+" : ""}
+                        {sc.marginPct.toFixed(1)}%
+                      </span>
+                      <span
+                        className={`font-mono text-xs tabular ${delta >= 0 ? "text-up" : "text-down"}`}
+                      >
+                        vs now {delta >= 0 ? "+" : ""}
+                        {delta.toFixed(1)}%
+                      </span>
+                    </div>
+                    <div className="mt-1 font-sans text-[10px] text-muted-foreground">
+                      ₹{sc.finishedPrice}/kg · saved{" "}
+                      {new Date(sc.savedAt).toLocaleTimeString("en-IN", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      )}
 
       <section className="mt-6">
         <h2 className="mb-3 font-mono text-xs uppercase tracking-widest text-muted-foreground">
