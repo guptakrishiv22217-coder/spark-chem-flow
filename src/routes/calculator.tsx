@@ -400,6 +400,16 @@ function CalculatorPage() {
           );
         })()}
       </section>
+
+      <section className="mt-8">
+        <h2 className="mb-1 font-sans text-xs uppercase tracking-widest text-muted-foreground">
+          Margin Sensitivity
+        </h2>
+        <p className="mb-4 font-sans text-xs text-muted-foreground">
+          Green = ≥25% margin · Amber = 10–25% · Red = loss. Current scenario is highlighted.
+        </p>
+        <SensitivityTable baseCost={rawCost} basePrice={sellPrice} />
+      </section>
     </AppShell>
   );
 }
