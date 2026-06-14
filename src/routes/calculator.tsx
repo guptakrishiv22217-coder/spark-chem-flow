@@ -29,6 +29,80 @@ const RECIPE = [
   { symbol: "CAUSTIC", label: "Caustic Soda (Flakes)", qty: 0.22 },
 ] as const;
 
+const COST_DELTAS = [-0.20, -0.10, 0, +0.10, +0.20];
+const PRICE_DELTAS = [-0.10, -0.05, 0, +0.05, +0.10];
+
+function SensitivityTable({
+  baseCost,
+  basePrice,
+}: {
+  baseCost: number;
+  basePrice: number;
+}) {
+  return (
+    <div className="overflow-x-auto rounded-md border border-border">
+      <table className="w-full font-mono text-xs">
+        <thead>
+          <tr className="border-b border-border bg-muted/40">
+            <th className="px-3 py-2 text-left font-sans text-[10px] uppercase tracking-wider text-muted-foreground">
+              Cost ↓ / Price →
+            </th>
+            {PRICE_DELTAS.map((pd) => (
+              <th
+                key={pd}
+                className="px-3 py-2 text-center font-sans text-[10px] uppercase tracking-wider text-muted-foreground"
+              >
+                {pd >= 0 ? "+" : ""}
+                {(pd * 100).toFixed(0)}%
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {COST_DELTAS.map((cd) => (
+            <tr
+              key={cd}
+              className="border-b border-border last:border-0 hover:bg-muted/20"
+            >
+              <td className="px-3 py-2 font-sans text-[10px] uppercase tracking-wider text-muted-foreground">
+                {cd >= 0 ? "+" : ""}
+                {(cd * 100).toFixed(0)}%
+              </td>
+              {PRICE_DELTAS.map((pd) => {
+                const adjCost = baseCost * (1 + cd);
+                const adjPrice = basePrice * (1 + pd);
+                const m =
+                  adjPrice > 0
+                    ? ((adjPrice - adjCost) / adjPrice) * 100
+                    : -999;
+                const style =
+                  m >= 25
+                    ? "bg-up/15 text-up"
+                    : m >= 10
+                      ? "bg-primary/10 text-primary"
+                      : m >= 0
+                        ? "bg-muted/40 text-foreground"
+                        : "bg-down/15 text-down";
+                const isBase = cd === 0 && pd === 0;
+                return (
+                  <td
+                    key={pd}
+                    className={`px-3 py-2.5 text-center tabular font-semibold ${style} ${isBase ? "ring-1 ring-inset ring-primary/60" : ""}`}
+                  >
+                    {m > -999
+                      ? `${m >= 0 ? "+" : ""}${m.toFixed(1)}%`
+                      : "—"}
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 function CalculatorPage() {
   const { data: quotes = [], isLoading, error } = useCommodities();
 
