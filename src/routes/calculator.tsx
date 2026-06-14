@@ -188,6 +188,35 @@ function CalculatorPage() {
             onChange={(e) => setProductName(e.target.value)}
             className="w-full max-w-xl border-b-2 border-transparent bg-transparent pb-1 font-sans text-2xl font-bold text-foreground outline-none transition-colors hover:border-border focus:border-primary sm:text-3xl"
           />
+          <button
+            onClick={() => {
+              const sc: Scenario = {
+                id: crypto.randomUUID(),
+                name: `${new Date().toLocaleString("en-IN", {
+                  day: "2-digit",
+                  month: "short",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}`,
+                savedAt: Date.now(),
+                marginPct,
+                finishedPrice: sellPrice,
+                snapshot: JSON.stringify({
+                  productName,
+                  sellPrice,
+                  targetMargin,
+                  shocks,
+                }),
+              };
+              const updated = [sc, ...scenarios].slice(0, 6);
+              setScenarios(updated);
+              localStorage.setItem(SCENARIOS_KEY, JSON.stringify(updated));
+              setShowScenarios(true);
+            }}
+            className="flex shrink-0 items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 font-sans text-xs text-muted-foreground transition-colors hover:border-primary hover:text-foreground"
+          >
+            Save Scenario
+          </button>
         </div>
         <p className="mt-1 font-mono text-[11px] text-muted-foreground">
           Live raw material prices from commodities table · what-if sliders simulate price spikes
