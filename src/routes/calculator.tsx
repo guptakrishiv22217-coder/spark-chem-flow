@@ -32,6 +32,27 @@ const RECIPE = [
 const COST_DELTAS = [-0.20, -0.10, 0, +0.10, +0.20];
 const PRICE_DELTAS = [-0.10, -0.05, 0, +0.05, +0.10];
 
+interface Scenario {
+  id: string;
+  name: string;
+  savedAt: number;
+  marginPct: number;
+  finishedPrice: number;
+  snapshot: string;
+}
+
+const SCENARIOS_KEY = "chempulse:scenarios:v2";
+
+function loadScenarios(): Scenario[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(SCENARIOS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
 function SensitivityTable({
   baseCost,
   basePrice,
