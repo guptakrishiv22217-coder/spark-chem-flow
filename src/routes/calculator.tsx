@@ -136,6 +136,8 @@ function CalculatorPage() {
     ANILINE: 0,
     CAUSTIC: 0,
   });
+  const [scenarios, setScenarios] = useState<Scenario[]>(() => loadScenarios());
+  const [showScenarios, setShowScenarios] = useState(false);
 
   const lines = useMemo(
     () =>
