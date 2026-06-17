@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { useCommodities, fmt, inr } from "@/lib/commodities";
+import { useSimpleMode } from "@/lib/ui-mode";
 
 export const Route = createFileRoute("/calculator")({
   head: () => ({
@@ -126,6 +127,7 @@ function SensitivityTable({
 
 function CalculatorPage() {
   const { data: quotes = [], isLoading, error } = useCommodities();
+  const simple = useSimpleMode();
 
   const [productName, setProductName] = useState("Reactive Blue Dye");
   const [sellPrice, setSellPrice] = useState(380); // ₹/kg finished
@@ -534,15 +536,36 @@ function CalculatorPage() {
         })()}
       </section>
 
-      <section className="mt-8">
-        <h2 className="mb-1 font-sans text-xs uppercase tracking-widest text-muted-foreground">
-          Margin Sensitivity
-        </h2>
-        <p className="mb-4 font-sans text-xs text-muted-foreground">
-          Green = ≥25% margin · Amber = 10–25% · Red = loss. Current scenario is highlighted.
-        </p>
-        <SensitivityTable baseCost={rawCost} basePrice={sellPrice} />
-      </section>
+      {simple ? (
+        <section className="mt-8 rounded-md border border-border bg-card p-4">
+          <h2 className="mb-2 font-sans text-xs uppercase tracking-widest text-muted-foreground">
+            What-if outlook
+          </h2>
+          {(() => {
+            const projected = sellPrice > 0 ? ((sellPrice - rawCost * 1.1) / sellPrice) * 100 : 0;
+            const belowTarget = projected < targetMargin;
+            return (
+              <p className="font-sans text-sm text-foreground">
+                If your raw material costs rise by 10%, your margin would drop to approximately{" "}
+                <span className={belowTarget ? "font-semibold text-down" : "font-semibold text-up"}>
+                  {projected.toFixed(1)}%
+                </span>
+                .{belowTarget ? " This would put you below your target margin." : ""}
+              </p>
+            );
+          })()}
+        </section>
+      ) : (
+        <section className="mt-8">
+          <h2 className="mb-1 font-sans text-xs uppercase tracking-widest text-muted-foreground">
+            Margin Sensitivity
+          </h2>
+          <p className="mb-4 font-sans text-xs text-muted-foreground">
+            Green = ≥25% margin · Amber = 10–25% · Red = loss. Current scenario is highlighted.
+          </p>
+          <SensitivityTable baseCost={rawCost} basePrice={sellPrice} />
+        </section>
+      )}
     </AppShell>
   );
 }
