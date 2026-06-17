@@ -2,6 +2,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import { Activity, Calculator, LayoutDashboard, Star, Zap } from "lucide-react";
 import { allQuotes, fmt } from "@/lib/market-data";
 import { useEffect, useMemo, useState } from "react";
+import { SimpleModeContext } from "@/lib/ui-mode";
 
 const NAV = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, exact: true },
@@ -42,6 +43,16 @@ function Ticker() {
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [now, setNow] = useState<string>("");
+  const [simpleMode, setSimpleMode] = useState(() => {
+    if (typeof window === "undefined") return true;
+    return localStorage.getItem("chempulse:simple-mode") !== "false";
+  });
+  const toggleSimpleMode = () => {
+    setSimpleMode((v) => {
+      localStorage.setItem("chempulse:simple-mode", String(!v));
+      return !v;
+    });
+  };
   useEffect(() => {
     const tick = () =>
       setNow(
@@ -88,6 +99,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             })}
           </nav>
           <div className="ml-auto flex items-center gap-3 font-mono text-xs text-muted-foreground">
+            <button
+              onClick={toggleSimpleMode}
+              className="font-sans text-[10px] uppercase tracking-wider text-muted-foreground hover:text-foreground border border-border rounded px-2 py-1"
+            >
+              {simpleMode ? "Simple" : "Advanced"}
+            </button>
             <span className="hidden items-center gap-1.5 sm:flex">
               <Activity className="h-3.5 w-3.5 text-up animate-pulse" />
               LIVE
@@ -117,7 +134,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </nav>
       </header>
       <Ticker />
-      <main className="mx-auto max-w-[1600px] px-4 py-6 sm:px-6">{children}</main>
+      <SimpleModeContext.Provider value={simpleMode}>
+        <main className="mx-auto max-w-[1600px] px-4 py-6 sm:px-6">{children}</main>
+      </SimpleModeContext.Provider>
     </div>
   );
 }
