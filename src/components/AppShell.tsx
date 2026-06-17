@@ -1,8 +1,14 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Activity, Calculator, LayoutDashboard, Star, Zap } from "lucide-react";
+import { Activity, Bell, Calculator, LayoutDashboard, Star, X, Zap } from "lucide-react";
 import { allQuotes, fmt } from "@/lib/market-data";
 import { useEffect, useMemo, useState } from "react";
 import { SimpleModeContext } from "@/lib/ui-mode";
+import {
+  loadAlerts,
+  saveAlerts,
+  checkTriggeredAlerts,
+  type PriceAlert,
+} from "@/lib/alerts";
 
 const NAV = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, exact: true },
@@ -66,6 +72,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     const id = setInterval(tick, 30_000);
     return () => clearInterval(id);
   }, []);
+
+  const [triggered, setTriggered] = useState<PriceAlert[]>([]);
+  useEffect(() => {
+    const alerts = loadAlerts();
+    const prices = Object.fromEntries(allQuotes().map((q) => [q.symbol, q.price]));
+    setTriggered(checkTriggeredAlerts(alerts, prices));
+  }, []);
+  const dismissAlert = (id: string) => {
+    setTriggered((t) => t.filter((a) => a.id !== id));
+    const remaining = loadAlerts().filter((a) => a.id !== id);
+    saveAlerts(remaining);
+  };
 
   return (
     <div className="dark min-h-screen bg-background text-foreground">
@@ -133,6 +151,30 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           })}
         </nav>
       </header>
+      {triggered.length > 0 && (
+        <div className="border-b border-primary/30 bg-primary/10">
+          {triggered.map((a) => (
+            <div
+              key={a.id}
+              className="mx-auto flex max-w-[1600px] items-center justify-between gap-3 px-4 py-2 sm:px-6"
+            >
+              <div className="flex min-w-0 items-center gap-2 font-sans text-sm">
+                <Bell className="h-4 w-4 shrink-0 text-primary" />
+                <span className="truncate">
+                  {a.symbolName} ({a.symbol}) is now {a.direction} ₹{a.threshold} — alert triggered
+                </span>
+              </div>
+              <button
+                onClick={() => dismissAlert(a.id)}
+                className="shrink-0 text-muted-foreground hover:text-foreground"
+                aria-label="Dismiss alert"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
       <Ticker />
       <SimpleModeContext.Provider value={simpleMode}>
         <main className="mx-auto max-w-[1600px] px-4 py-6 sm:px-6">{children}</main>
