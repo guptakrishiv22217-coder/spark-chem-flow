@@ -116,6 +116,7 @@ function Index() {
         </section>
       </div>
 
+      {!simple && (
       <section className="mt-6 rounded-md border border-border bg-card">
         <header className="flex items-center justify-between border-b border-border px-4 py-3">
           <h2 className="font-mono text-xs uppercase tracking-widest">All Commodities</h2>
