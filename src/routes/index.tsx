@@ -1,8 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { AlertTriangle, TrendingDown, TrendingUp, Loader2 } from "lucide-react";
+import { useMemo } from "react";
+import { AlertTriangle, TrendingDown, TrendingUp, Loader2, Sparkles } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { useCommodities, fmt, inr, type Commodity } from "@/lib/commodities";
 import { useSimpleMode } from "@/lib/ui-mode";
+import { generateBriefing } from "@/lib/briefing";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -40,6 +42,7 @@ function Index() {
     quotes.length > 0 ? quotes.reduce((a, b) => a + b.change_pct, 0) / quotes.length : 0;
   const advancers = quotes.filter((q) => q.change_pct > 0).length;
   const decliners = quotes.filter((q) => q.change_pct < 0).length;
+  const briefing = useMemo(() => generateBriefing(quotes), [quotes]);
 
   return (
     <AppShell>
@@ -57,6 +60,24 @@ function Index() {
         <div className="mb-4 rounded-md border border-down/40 bg-down/10 p-3 font-mono text-xs text-down">
           Failed to load commodities: {(error as Error).message}
         </div>
+      )}
+
+      {!isLoading && briefing.length > 0 && (
+        <section className="mb-6 rounded-md border border-primary/30 bg-primary/5 p-4">
+          <div className="mb-2 flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-primary" />
+            <h2 className="font-mono text-xs uppercase tracking-widest text-primary">
+              Today's Briefing
+            </h2>
+          </div>
+          <ul className="space-y-1.5">
+            {briefing.map((line, i) => (
+              <li key={i} className="font-sans text-sm text-foreground">
+                {line}
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
 
       <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
