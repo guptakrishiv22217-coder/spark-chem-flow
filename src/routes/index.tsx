@@ -165,6 +165,7 @@ function Index() {
           </div>
         )}
       </section>
+      )}
     </AppShell>
   );
 }
