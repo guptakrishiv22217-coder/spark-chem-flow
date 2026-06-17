@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { AlertTriangle, TrendingDown, TrendingUp, Loader2 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { useCommodities, fmt, inr, type Commodity } from "@/lib/commodities";
+import { useSimpleMode } from "@/lib/ui-mode";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -24,6 +25,7 @@ export const Route = createFileRoute("/")({
 
 function Index() {
   const { data: quotes = [], isLoading, error } = useCommodities();
+  const simple = useSimpleMode();
 
   const sortedByChange = [...quotes].sort((a, b) => b.change_pct - a.change_pct);
   const gainers = sortedByChange.slice(0, 5);
