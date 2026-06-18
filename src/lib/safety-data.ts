@@ -4,15 +4,15 @@ export interface MaterialSafetyData {
   id: string;
   symbol: string;
   cas_number: string | null;
-  ghs_classification: string[];
-  hazard_statements: string[];
-  precautionary_statements: string[];
+  ghs_classification: string[] | null;
+  hazard_statements: string[] | null;
+  precautionary_statements: string[] | null;
   signal_word: "Danger" | "Warning" | null;
-  pictograms: string[];
+  pictograms: string[] | null;
   storage_requirements: string | null;
   handling_notes: string | null;
   sds_file_url: string | null;
-  reach_registered: boolean;
+  reach_registered: boolean | null;
   last_reviewed_at: string | null;
 }
 
