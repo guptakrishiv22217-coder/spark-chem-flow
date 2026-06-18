@@ -14,6 +14,7 @@ const NAV = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { to: "/watchlist", label: "Watchlist", icon: Star, exact: true },
   { to: "/calculator", label: "Margin Calc", icon: Calculator, exact: true },
+  { to: "/safety", label: "Safety", icon: ShieldAlert, exact: false },
 ] as const;
 
 function Ticker() {
