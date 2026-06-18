@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Activity, Bell, Calculator, LayoutDashboard, Star, X, Zap } from "lucide-react";
+import { Activity, Bell, Calculator, LayoutDashboard, ShieldAlert, Star, X, Zap } from "lucide-react";
 import { allQuotes, fmt } from "@/lib/market-data";
 import { useEffect, useMemo, useState } from "react";
 import { SimpleModeContext } from "@/lib/ui-mode";
