@@ -7,7 +7,7 @@ export interface MaterialSafetyData {
   ghs_classification: string[] | null;
   hazard_statements: string[] | null;
   precautionary_statements: string[] | null;
-  signal_word: "Danger" | "Warning" | null;
+  signal_word: string | null;
   pictograms: string[] | null;
   storage_requirements: string | null;
   handling_notes: string | null;
