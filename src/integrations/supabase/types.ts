@@ -62,6 +62,71 @@ export type Database = {
         }
         Relationships: []
       }
+      material_safety_data: {
+        Row: {
+          cas_number: string | null
+          created_at: string
+          ghs_classification: string[] | null
+          handling_notes: string | null
+          hazard_statements: string[] | null
+          id: string
+          last_reviewed_at: string | null
+          pictograms: string[] | null
+          precautionary_statements: string[] | null
+          reach_registered: boolean | null
+          reviewed_by: string | null
+          sds_file_url: string | null
+          signal_word: string | null
+          storage_requirements: string | null
+          symbol: string
+          updated_at: string
+        }
+        Insert: {
+          cas_number?: string | null
+          created_at?: string
+          ghs_classification?: string[] | null
+          handling_notes?: string | null
+          hazard_statements?: string[] | null
+          id?: string
+          last_reviewed_at?: string | null
+          pictograms?: string[] | null
+          precautionary_statements?: string[] | null
+          reach_registered?: boolean | null
+          reviewed_by?: string | null
+          sds_file_url?: string | null
+          signal_word?: string | null
+          storage_requirements?: string | null
+          symbol: string
+          updated_at?: string
+        }
+        Update: {
+          cas_number?: string | null
+          created_at?: string
+          ghs_classification?: string[] | null
+          handling_notes?: string | null
+          hazard_statements?: string[] | null
+          id?: string
+          last_reviewed_at?: string | null
+          pictograms?: string[] | null
+          precautionary_statements?: string[] | null
+          reach_registered?: boolean | null
+          reviewed_by?: string | null
+          sds_file_url?: string | null
+          signal_word?: string | null
+          storage_requirements?: string | null
+          symbol?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "material_safety_data_symbol_fkey"
+            columns: ["symbol"]
+            isOneToOne: true
+            referencedRelation: "commodities"
+            referencedColumns: ["symbol"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
