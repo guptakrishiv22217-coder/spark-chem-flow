@@ -13,6 +13,7 @@ import { Route as WatchlistRouteImport } from './routes/watchlist'
 import { Route as SafetyRouteImport } from './routes/safety'
 import { Route as CalculatorRouteImport } from './routes/calculator'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as SafetyIndexRouteImport } from './routes/safety.index'
 import { Route as SafetySymbolRouteImport } from './routes/safety.$symbol'
 import { Route as CommoditySymbolRouteImport } from './routes/commodity.$symbol'
 
@@ -36,6 +37,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SafetyIndexRoute = SafetyIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => SafetyRoute,
+} as any)
 const SafetySymbolRoute = SafetySymbolRouteImport.update({
   id: '/$symbol',
   path: '/$symbol',
@@ -54,14 +60,15 @@ export interface FileRoutesByFullPath {
   '/watchlist': typeof WatchlistRoute
   '/commodity/$symbol': typeof CommoditySymbolRoute
   '/safety/$symbol': typeof SafetySymbolRoute
+  '/safety/': typeof SafetyIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/calculator': typeof CalculatorRoute
-  '/safety': typeof SafetyRouteWithChildren
   '/watchlist': typeof WatchlistRoute
   '/commodity/$symbol': typeof CommoditySymbolRoute
   '/safety/$symbol': typeof SafetySymbolRoute
+  '/safety': typeof SafetyIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -71,6 +78,7 @@ export interface FileRoutesById {
   '/watchlist': typeof WatchlistRoute
   '/commodity/$symbol': typeof CommoditySymbolRoute
   '/safety/$symbol': typeof SafetySymbolRoute
+  '/safety/': typeof SafetyIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -81,14 +89,15 @@ export interface FileRouteTypes {
     | '/watchlist'
     | '/commodity/$symbol'
     | '/safety/$symbol'
+    | '/safety/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/calculator'
-    | '/safety'
     | '/watchlist'
     | '/commodity/$symbol'
     | '/safety/$symbol'
+    | '/safety'
   id:
     | '__root__'
     | '/'
@@ -97,6 +106,7 @@ export interface FileRouteTypes {
     | '/watchlist'
     | '/commodity/$symbol'
     | '/safety/$symbol'
+    | '/safety/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -137,6 +147,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/safety/': {
+      id: '/safety/'
+      path: '/'
+      fullPath: '/safety/'
+      preLoaderRoute: typeof SafetyIndexRouteImport
+      parentRoute: typeof SafetyRoute
+    }
     '/safety/$symbol': {
       id: '/safety/$symbol'
       path: '/$symbol'
@@ -156,10 +173,12 @@ declare module '@tanstack/react-router' {
 
 interface SafetyRouteChildren {
   SafetySymbolRoute: typeof SafetySymbolRoute
+  SafetyIndexRoute: typeof SafetyIndexRoute
 }
 
 const SafetyRouteChildren: SafetyRouteChildren = {
   SafetySymbolRoute: SafetySymbolRoute,
+  SafetyIndexRoute: SafetyIndexRoute,
 }
 
 const SafetyRouteWithChildren =
