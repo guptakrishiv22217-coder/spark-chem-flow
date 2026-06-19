@@ -13,6 +13,8 @@ import { Route as WatchlistRouteImport } from './routes/watchlist'
 import { Route as SafetyRouteImport } from './routes/safety'
 import { Route as CalculatorRouteImport } from './routes/calculator'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as SafetyIndexRouteImport } from './routes/safety.index'
+import { Route as SafetySymbolRouteImport } from './routes/safety.$symbol'
 import { Route as CommoditySymbolRouteImport } from './routes/commodity.$symbol'
 
 const WatchlistRoute = WatchlistRouteImport.update({
@@ -35,6 +37,16 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SafetyIndexRoute = SafetyIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => SafetyRoute,
+} as any)
+const SafetySymbolRoute = SafetySymbolRouteImport.update({
+  id: '/$symbol',
+  path: '/$symbol',
+  getParentRoute: () => SafetyRoute,
+} as any)
 const CommoditySymbolRoute = CommoditySymbolRouteImport.update({
   id: '/commodity/$symbol',
   path: '/commodity/$symbol',
@@ -44,24 +56,29 @@ const CommoditySymbolRoute = CommoditySymbolRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/calculator': typeof CalculatorRoute
-  '/safety': typeof SafetyRoute
+  '/safety': typeof SafetyRouteWithChildren
   '/watchlist': typeof WatchlistRoute
   '/commodity/$symbol': typeof CommoditySymbolRoute
+  '/safety/$symbol': typeof SafetySymbolRoute
+  '/safety/': typeof SafetyIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/calculator': typeof CalculatorRoute
-  '/safety': typeof SafetyRoute
   '/watchlist': typeof WatchlistRoute
   '/commodity/$symbol': typeof CommoditySymbolRoute
+  '/safety/$symbol': typeof SafetySymbolRoute
+  '/safety': typeof SafetyIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/calculator': typeof CalculatorRoute
-  '/safety': typeof SafetyRoute
+  '/safety': typeof SafetyRouteWithChildren
   '/watchlist': typeof WatchlistRoute
   '/commodity/$symbol': typeof CommoditySymbolRoute
+  '/safety/$symbol': typeof SafetySymbolRoute
+  '/safety/': typeof SafetyIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -71,8 +88,16 @@ export interface FileRouteTypes {
     | '/safety'
     | '/watchlist'
     | '/commodity/$symbol'
+    | '/safety/$symbol'
+    | '/safety/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/calculator' | '/safety' | '/watchlist' | '/commodity/$symbol'
+  to:
+    | '/'
+    | '/calculator'
+    | '/watchlist'
+    | '/commodity/$symbol'
+    | '/safety/$symbol'
+    | '/safety'
   id:
     | '__root__'
     | '/'
@@ -80,12 +105,14 @@ export interface FileRouteTypes {
     | '/safety'
     | '/watchlist'
     | '/commodity/$symbol'
+    | '/safety/$symbol'
+    | '/safety/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CalculatorRoute: typeof CalculatorRoute
-  SafetyRoute: typeof SafetyRoute
+  SafetyRoute: typeof SafetyRouteWithChildren
   WatchlistRoute: typeof WatchlistRoute
   CommoditySymbolRoute: typeof CommoditySymbolRoute
 }
@@ -120,6 +147,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/safety/': {
+      id: '/safety/'
+      path: '/'
+      fullPath: '/safety/'
+      preLoaderRoute: typeof SafetyIndexRouteImport
+      parentRoute: typeof SafetyRoute
+    }
+    '/safety/$symbol': {
+      id: '/safety/$symbol'
+      path: '/$symbol'
+      fullPath: '/safety/$symbol'
+      preLoaderRoute: typeof SafetySymbolRouteImport
+      parentRoute: typeof SafetyRoute
+    }
     '/commodity/$symbol': {
       id: '/commodity/$symbol'
       path: '/commodity/$symbol'
@@ -130,10 +171,23 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface SafetyRouteChildren {
+  SafetySymbolRoute: typeof SafetySymbolRoute
+  SafetyIndexRoute: typeof SafetyIndexRoute
+}
+
+const SafetyRouteChildren: SafetyRouteChildren = {
+  SafetySymbolRoute: SafetySymbolRoute,
+  SafetyIndexRoute: SafetyIndexRoute,
+}
+
+const SafetyRouteWithChildren =
+  SafetyRoute._addFileChildren(SafetyRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CalculatorRoute: CalculatorRoute,
-  SafetyRoute: SafetyRoute,
+  SafetyRoute: SafetyRouteWithChildren,
   WatchlistRoute: WatchlistRoute,
   CommoditySymbolRoute: CommoditySymbolRoute,
 }
