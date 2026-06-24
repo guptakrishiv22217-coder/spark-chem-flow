@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WatchlistRouteImport } from './routes/watchlist'
 import { Route as SafetyRouteImport } from './routes/safety'
+import { Route as QuoteCheckRouteImport } from './routes/quote-check'
 import { Route as CalculatorRouteImport } from './routes/calculator'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SafetyIndexRouteImport } from './routes/safety.index'
@@ -25,6 +26,11 @@ const WatchlistRoute = WatchlistRouteImport.update({
 const SafetyRoute = SafetyRouteImport.update({
   id: '/safety',
   path: '/safety',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QuoteCheckRoute = QuoteCheckRouteImport.update({
+  id: '/quote-check',
+  path: '/quote-check',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CalculatorRoute = CalculatorRouteImport.update({
@@ -56,6 +62,7 @@ const CommoditySymbolRoute = CommoditySymbolRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/calculator': typeof CalculatorRoute
+  '/quote-check': typeof QuoteCheckRoute
   '/safety': typeof SafetyRouteWithChildren
   '/watchlist': typeof WatchlistRoute
   '/commodity/$symbol': typeof CommoditySymbolRoute
@@ -65,6 +72,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/calculator': typeof CalculatorRoute
+  '/quote-check': typeof QuoteCheckRoute
   '/watchlist': typeof WatchlistRoute
   '/commodity/$symbol': typeof CommoditySymbolRoute
   '/safety/$symbol': typeof SafetySymbolRoute
@@ -74,6 +82,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/calculator': typeof CalculatorRoute
+  '/quote-check': typeof QuoteCheckRoute
   '/safety': typeof SafetyRouteWithChildren
   '/watchlist': typeof WatchlistRoute
   '/commodity/$symbol': typeof CommoditySymbolRoute
@@ -85,6 +94,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/calculator'
+    | '/quote-check'
     | '/safety'
     | '/watchlist'
     | '/commodity/$symbol'
@@ -94,6 +104,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/calculator'
+    | '/quote-check'
     | '/watchlist'
     | '/commodity/$symbol'
     | '/safety/$symbol'
@@ -102,6 +113,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/calculator'
+    | '/quote-check'
     | '/safety'
     | '/watchlist'
     | '/commodity/$symbol'
@@ -112,6 +124,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CalculatorRoute: typeof CalculatorRoute
+  QuoteCheckRoute: typeof QuoteCheckRoute
   SafetyRoute: typeof SafetyRouteWithChildren
   WatchlistRoute: typeof WatchlistRoute
   CommoditySymbolRoute: typeof CommoditySymbolRoute
@@ -131,6 +144,13 @@ declare module '@tanstack/react-router' {
       path: '/safety'
       fullPath: '/safety'
       preLoaderRoute: typeof SafetyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/quote-check': {
+      id: '/quote-check'
+      path: '/quote-check'
+      fullPath: '/quote-check'
+      preLoaderRoute: typeof QuoteCheckRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/calculator': {
@@ -187,6 +207,7 @@ const SafetyRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CalculatorRoute: CalculatorRoute,
+  QuoteCheckRoute: QuoteCheckRoute,
   SafetyRoute: SafetyRouteWithChildren,
   WatchlistRoute: WatchlistRoute,
   CommoditySymbolRoute: CommoditySymbolRoute,
@@ -194,13 +215,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
