@@ -46,9 +46,15 @@ export async function fetchSafetyData(symbol: string): Promise<MaterialSafetyDat
 }
 
 export async function upsertSafetyData(record: Partial<MaterialSafetyData> & { symbol: string }) {
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError) throw userError;
+  if (!userData.user) throw new Error("You must be signed in to edit safety data.");
   const { error } = await supabase
     .from("material_safety_data")
-    .upsert({ ...record, updated_at: new Date().toISOString() }, { onConflict: "symbol" });
+    .upsert(
+      { ...record, reviewed_by: userData.user.id, updated_at: new Date().toISOString() },
+      { onConflict: "symbol" },
+    );
   if (error) throw error;
 }
 
